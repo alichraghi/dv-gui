@@ -1,4 +1,5 @@
 const std = @import("std");
+const build_options = @import("build_options");
 const hsluv = @import("hsluv.zig");
 
 const Color = @This();
@@ -411,6 +412,8 @@ pub const PMAImage = struct {
     /// the returned []PMA inside PMAImage must be freed with alloc
     /// the render_alloc ist used for temporary allocations in the render process
     pub fn fromTvgFile(dbg_name: []const u8, alloc: std.mem.Allocator, render_alloc: std.mem.Allocator, tvg_bytes: []const u8, height: u32, icon_opts: dvui.IconRenderOptions) !PMAImage {
+        if (!build_options.enable_svg2tvg) comptime unreachable;
+
         const ImageAdapter = struct {
             pixels: []u8,
             width: u32,

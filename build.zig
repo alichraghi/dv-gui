@@ -21,6 +21,7 @@ pub fn build(b: *std.Build) !void {
 
     // Setting this to false may fix linking errors: https://github.com/david-vanderson/dvui/issues/269
     const use_lld = b.option(bool, "use-lld", "The value of the use_lld executable option");
+    const enable_svg2tvg = b.option(bool, "enable_svg2tvg", "Enable abilibity to convert SVGs into TVG format") orelse true;
     const test_filters = b.option([]const []const u8, "test-filter", "Skip tests that do not match any filter") orelse &[0][]const u8{};
 
     const generate_doc_images = b.option(bool, "generate-images", "Add this to 'docs' to generate images") orelse false;
@@ -57,6 +58,7 @@ pub fn build(b: *std.Build) !void {
         "log_error_trace",
         b.option(bool, "log-error-trace", "If error logs should include the error return trace (automatically enabled with log stack traces)"),
     );
+    build_options.addOption(bool, "enable_svg2tvg", enable_svg2tvg);
 
     const dvui_opts = DvuiModuleOptions{
         .b = b,
@@ -66,6 +68,7 @@ pub fn build(b: *std.Build) !void {
         .test_filters = test_filters,
         .check_step = check_step,
         .use_lld = use_lld,
+        .enable_svg2tvg = enable_svg2tvg,
         .build_options = build_options,
     };
 
@@ -475,6 +478,7 @@ const DvuiModuleOptions = struct {
     test_filters: []const []const u8,
     add_stb_image: bool = true,
     use_lld: ?bool = null,
+    enable_svg2tvg: bool = true,
     build_options: *std.Build.Step.Options,
 
     fn addChecks(self: *const @This(), mod: *std.Build.Module, name: []const u8) void {
@@ -506,10 +510,12 @@ fn addDvuiModule(
         .optimize = optimize,
     });
     dvui_mod.addOptions("build_options", opts.build_options);
-    dvui_mod.addImport("svg2tvg", b.dependency("svg2tvg", .{
-        .target = target,
-        .optimize = optimize,
-    }).module("svg2tvg"));
+
+    if (opts.enable_svg2tvg) {
+        if (b.lazyDependency("svg2tvg", .{ .target = target, .optimize = optimize })) |svg2tvg_dep| {
+            dvui_mod.addImport("svg2tvg", svg2tvg_dep.module("svg2tvg"));
+        }
+    }
 
     if (target.result.os.tag == .windows) {
         // tinyfiledialogs needs this

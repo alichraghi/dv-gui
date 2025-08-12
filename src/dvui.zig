@@ -19,6 +19,7 @@
 //!
 const builtin = @import("builtin");
 const std = @import("std");
+const build_options = @import("build_options");
 /// Using this in application code will hinder ZLS from referencing the correct backend.
 /// To avoid this import the backend directly from the applications build.zig
 ///
@@ -1271,6 +1272,8 @@ pub fn textureInvalidateCache(key: Texture.CacheKey) void {
 ///
 /// Only valid between `Window.begin`and `Window.end`.
 pub fn svgToTvg(allocator: std.mem.Allocator, svg_bytes: []const u8) (std.mem.Allocator.Error || TvgError)![]const u8 {
+    if (!build_options.enable_svg2tvg) comptime unreachable;
+
     return tvg.tvg_from_svg(allocator, svg_bytes, .{}) catch |err| switch (err) {
         error.OutOfMemory => |e| return e,
         else => {
@@ -1284,6 +1287,8 @@ pub fn svgToTvg(allocator: std.mem.Allocator, svg_bytes: []const u8) (std.mem.Al
 ///
 /// Only valid between `Window.begin`and `Window.end`.
 pub fn iconWidth(name: []const u8, tvg_bytes: []const u8, height: f32) TvgError!f32 {
+    if (!build_options.enable_svg2tvg) comptime unreachable;
+
     if (height == 0) return 0.0;
     var stream = std.io.fixedBufferStream(tvg_bytes);
     var parser = tvg.tvg.parse(currentWindow().arena(), stream.reader()) catch |err| {
